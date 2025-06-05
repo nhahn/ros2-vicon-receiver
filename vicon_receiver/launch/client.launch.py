@@ -1,13 +1,20 @@
 from launch import LaunchDescription
+from launch.actions import DeclareLaunchArgument
+from launch.substitutions import LaunchConfiguration
+
 from launch_ros.actions import Node
 
 def generate_launch_description():
 
-    hostname = '192.168.1.1'
-    buffer_size = 200
-    topic_namespace = 'vicon'
-
-    return LaunchDescription([Node(
+    return LaunchDescription([
+        DeclareLaunchArgument(name="host"),
+        DeclareLaunchArgument(name="buffer_size", default_value='200'),
+        DeclareLaunchArgument(name="namespace", default_value='vicon'),
+        Node(
             package='vicon_receiver', executable='vicon_client', output='screen',
-            parameters=[{'hostname': hostname, 'buffer_size': buffer_size, 'namespace': topic_namespace}]
-        )])
+            parameters=[{'hostname': LaunchConfiguration('host'), 
+                         'buffer_size': LaunchConfiguration('buffer_size'), 
+                         'namespace': LaunchConfiguration('namespace')
+                         }]
+        )
+    ])

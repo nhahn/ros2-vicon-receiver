@@ -16,8 +16,7 @@ Communicator::Communicator() : Node("vicon")
 bool Communicator::connect()
 {
     // connect to server
-    string msg = "Connecting to " + hostname + " ...";
-    cout << msg << endl;
+    RCLCPP_INFO(get_logger(), "Connecting to %s ...", hostname.c_str());
     int counter = 0;
     while (!vicon_client.IsConnected().Connected)
     {
@@ -25,14 +24,11 @@ bool Communicator::connect()
         if (!ok)
         {
             counter++;
-            msg = "Connect failed, reconnecting (" + std::to_string(counter) + ")...";
-            cout << msg << endl;
+            RCLCPP_WARN(get_logger(), "Connect failed, reconnecting (%d)...", counter);
             sleep(1);
         }
     }
-    msg = "Connection successfully established with " + hostname;
-    cout << msg << endl;
-
+    RCLCPP_INFO(get_logger(), "Connection successfully established with %s", hostname.c_str());
     // perform further initialization
     vicon_client.EnableSegmentData();
     vicon_client.EnableMarkerData();
@@ -44,9 +40,7 @@ bool Communicator::connect()
     vicon_client.SetStreamMode(StreamMode::ClientPull);
     vicon_client.SetBufferSize(buffer_size);
 
-    msg = "Initialization complete";
-    cout << msg << endl;
-
+    RCLCPP_INFO(get_logger(), "Initialization complete");
     return true;
 }
 
@@ -60,11 +54,9 @@ bool Communicator::disconnect()
     vicon_client.DisableUnlabeledMarkerData();
     vicon_client.DisableDeviceData();
     vicon_client.DisableCentroidData();
-    string msg = "Disconnecting from " + hostname + "...";
-    cout << msg << endl;
+    RCLCPP_INFO(get_logger(), "Disconnecting from  %s ...", hostname.c_str());
     vicon_client.Disconnect();
-    msg = "Successfully disconnected";
-    cout << msg << endl;
+    RCLCPP_INFO(get_logger(), "Successfully disconnected");
     if (!vicon_client.IsConnected().Connected)
         return true;
     return false;
@@ -147,12 +139,11 @@ void Communicator::create_publisher_thread(const string subject_name, const stri
     std::string topic_name = ns_name + "/" + subject_name + "/" + segment_name;
     std::string key = subject_name + "/" + segment_name;
 
-    string msg = "Creating publisher for segment " + segment_name + " from subject " + subject_name;
-    cout << msg << endl;
+    RCLCPP_INFO(get_logger(), "Creating publisher for segment %s from subject %s", segment_name.c_str(), subject_name.c_str());
 
     // create publisher
     boost::mutex::scoped_lock lock(mutex);
-    pub_map.insert(std::map<std::string, Publisher>::value_type(key, Publisher(topic_name, this)));
+    pub_map.insert(std::map<std::string, Publisher>::value_type(key, Publisher(topic_name, shared_from_this())));
 
     // we don't need the lock anymore, since rest is protected by is_ready
     lock.unlock();
